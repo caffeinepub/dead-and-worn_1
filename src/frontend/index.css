@@ -1,0 +1,441 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================
+   FONTS
+   ======================== */
+
+@font-face {
+  font-family: "Cabinet Grotesk";
+  src: url("/assets/fonts/CabinetGrotesk-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque-Variable.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/assets/fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ========================
+   DESIGN TOKENS — Y2K Underground Zine
+   ======================== */
+
+@layer base {
+  :root {
+    --radius: 0px;
+
+    /* Core palette */
+    --background: 0.08 0.006 195;
+    --foreground: 0.93 0.018 115;
+
+    --card: 0.11 0.008 195;
+    --card-foreground: 0.93 0.018 115;
+
+    --popover: 0.10 0.007 195;
+    --popover-foreground: 0.93 0.018 115;
+
+    /* Primary = acid green */
+    --primary: 0.83 0.23 142;
+    --primary-foreground: 0.05 0.005 195;
+
+    --secondary: 0.17 0.01 195;
+    --secondary-foreground: 0.83 0.23 142;
+
+    --muted: 0.14 0.006 195;
+    --muted-foreground: 0.50 0.014 168;
+
+    /* Accent = blood red */
+    --accent: 0.53 0.24 26;
+    --accent-foreground: 0.96 0 0;
+
+    --destructive: 0.56 0.25 26;
+    --destructive-foreground: 0.96 0 0;
+
+    --border: 0.22 0.014 150;
+    --input: 0.20 0.010 175;
+    --ring: 0.83 0.23 142;
+
+    --chart-1: 0.83 0.23 142;
+    --chart-2: 0.53 0.24 26;
+    --chart-3: 0.65 0.18 240;
+    --chart-4: 0.75 0.15 85;
+    --chart-5: 0.55 0.12 310;
+
+    --sidebar: 0.09 0.007 195;
+    --sidebar-foreground: 0.93 0.018 115;
+    --sidebar-primary: 0.83 0.23 142;
+    --sidebar-primary-foreground: 0.05 0.005 195;
+    --sidebar-accent: 0.17 0.01 195;
+    --sidebar-accent-foreground: 0.83 0.23 142;
+    --sidebar-border: 0.22 0.014 150;
+    --sidebar-ring: 0.83 0.23 142;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Cabinet Grotesk", sans-serif;
+    font-weight: 400;
+  }
+}
+
+/* ========================
+   FIX 1 — BODY GRAIN TEXTURE
+   Every surface gets a fine-grain film that reads like xerox/zine print
+   ======================== */
+
+/* SVG noise grain — injected as repeating background on body */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+  opacity: 0.038;
+  mix-blend-mode: overlay;
+}
+
+/* Global phosphor-green ambient glow on background */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 40% at 15% 20%, oklch(0.83 0.23 142 / 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 85% 75%, oklch(0.53 0.24 26 / 0.04) 0%, transparent 70%);
+}
+
+/* ========================
+   FIX 2 — HERO: BROKEN GRID + TYPOGRAPHIC VIOLENCE
+   ======================== */
+
+/* Stencil stamp effect — duplicated text layers for misprint feel */
+.hero-title-wrap {
+  position: relative;
+  line-height: 0.88;
+}
+
+/* Ghost layer behind main title — simulates mis-registration of a photocopied zine */
+.hero-title-wrap::before {
+  content: attr(data-text);
+  position: absolute;
+  left: 2px;
+  top: 3px;
+  color: oklch(0.83 0.23 142 / 0.12);
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: pre;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The WORN word gets a red channel offset — color aberration */
+.hero-worn {
+  position: relative;
+  display: inline-block;
+}
+
+.hero-worn::before {
+  content: "WORN";
+  position: absolute;
+  left: -2px;
+  top: 1px;
+  color: oklch(0.53 0.24 26 / 0.35);
+  pointer-events: none;
+  user-select: none;
+  font-family: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  font-size: inherit;
+}
+
+/* Decorative xerox-line rules */
+.xerox-rule {
+  height: 1px;
+  position: relative;
+  overflow: visible;
+}
+
+.xerox-rule::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: oklch(0.83 0.23 142 / 0.4);
+}
+
+.xerox-rule::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2px;
+  height: 1px;
+  background: oklch(0.83 0.23 142 / 0.1);
+}
+
+/* Diagonal slash decorators on the hero — zine cutout feel */
+.slash-decor {
+  position: relative;
+}
+
+.slash-decor::after {
+  content: "////";
+  position: absolute;
+  right: -10px;
+  bottom: -4px;
+  font-family: "Geist Mono", monospace;
+  font-size: 10px;
+  color: oklch(0.83 0.23 142 / 0.25);
+  letter-spacing: -2px;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ========================
+   FIX 3 — CARD REDESIGN: XEROX PRINT AESTHETIC
+   ======================== */
+
+/* Price tag — hand-stamped, slightly rotated, isolated */
+.price-stamp {
+  font-family: "Geist Mono", monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: oklch(0.83 0.23 142);
+  letter-spacing: 0.08em;
+  display: inline-block;
+  background: oklch(0.83 0.23 142 / 0.10);
+  border: 1px solid oklch(0.83 0.23 142 / 0.30);
+  padding: 1px 6px;
+  line-height: 1.6;
+  position: relative;
+  transform: rotate(-0.8deg);
+  transform-origin: left center;
+}
+
+/* Card hover: full metadata overlay instead of simple tint */
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    oklch(0.06 0.005 195 / 0.92) 0%,
+    oklch(0.06 0.005 195 / 0.60) 40%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 10px;
+  pointer-events: none;
+}
+
+.card-root:hover .card-overlay {
+  opacity: 1;
+}
+
+/* Scanline on card hover — CRT effect */
+.card-root::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    oklch(0 0 0 / 0.025) 3px,
+    oklch(0 0 0 / 0.025) 4px
+  );
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.card-root:hover::after {
+  opacity: 1;
+}
+
+/* Distressed card border — jagged look */
+.card-root {
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid oklch(0.22 0.014 150);
+}
+
+.card-root:hover {
+  transform: translateY(-2px) rotate(0.3deg);
+  box-shadow:
+    0 6px 20px oklch(0 0 0 / 0.5),
+    0 0 0 1px oklch(0.83 0.23 142 / 0.35),
+    2px 2px 0 oklch(0.83 0.23 142 / 0.08);
+  border-color: oklch(0.83 0.23 142 / 0.45);
+}
+
+/* ========================
+   LEGACY / KEPT PATTERNS
+   ======================== */
+
+/* Acid green glow for text */
+.green-glow {
+  text-shadow:
+    0 0 16px oklch(0.83 0.23 142 / 0.6),
+    0 0 48px oklch(0.83 0.23 142 / 0.2),
+    0 0 80px oklch(0.83 0.23 142 / 0.08);
+}
+
+/* Glitch text animation */
+@keyframes glitch {
+  0%, 93%, 100% {
+    transform: translate(0);
+    clip-path: none;
+  }
+  94% {
+    transform: translate(-3px, 1px);
+    clip-path: inset(15% 0 65% 0);
+    color: oklch(0.83 0.23 142);
+  }
+  96% {
+    transform: translate(3px, -1px);
+    clip-path: inset(55% 0 25% 0);
+    color: oklch(0.93 0.018 115);
+  }
+  98% {
+    transform: translate(-1px, 0px);
+    clip-path: inset(30% 0 50% 0);
+  }
+}
+
+.glitch {
+  animation: glitch 7s infinite;
+}
+
+/* Selling badge pulse */
+@keyframes selling-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.56 0.25 26 / 0.8); }
+  50% { box-shadow: 0 0 0 5px oklch(0.56 0.25 26 / 0); }
+}
+
+.selling-pulse {
+  animation: selling-pulse 1.8s infinite;
+}
+
+/* Dashed border Y2K style */
+.dashed-border {
+  border: 1px dashed oklch(0.83 0.23 142 / 0.3);
+}
+
+/* Marquee animation */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  animation: marquee 18s linear infinite;
+}
+
+/* Staggered fade in */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fade-up 0.35s ease forwards;
+}
+
+/* Price tag — legacy, kept for listing detail page */
+.price-tag {
+  font-family: "Geist Mono", monospace;
+  font-weight: 600;
+  color: oklch(0.83 0.23 142);
+  letter-spacing: 0.05em;
+}
+
+/* ========================
+   GLOBAL SCROLLBAR
+   ======================== */
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: oklch(0.08 0.006 195); }
+::-webkit-scrollbar-thumb { background: oklch(0.22 0.014 150); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: oklch(0.83 0.23 142 / 0.55); }
+
+/* ========================
+   FOCUS VISIBLE
+   ======================== */
+
+:focus-visible {
+  outline: 1px solid oklch(0.83 0.23 142);
+  outline-offset: 2px;
+}
+
+/* ========================
+   SCANLINES UTILITY
+   ======================== */
+
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    oklch(0 0 0 / 0.035) 2px,
+    oklch(0 0 0 / 0.035) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ========================
+   TYPOGRAPHY
+   ======================== */
+
+.font-display {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.font-mono-custom {
+  font-family: "Geist Mono", monospace;
+}
