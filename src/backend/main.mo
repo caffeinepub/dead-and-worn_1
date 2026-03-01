@@ -9,7 +9,6 @@ import Time "mo:core/Time";
 import Iter "mo:core/Iter";
 import MixinStorage "blob-storage/Mixin";
 import Migration "migration";
-import List "mo:core/List";
 
 (with migration = Migration.run)
 actor {
@@ -34,6 +33,26 @@ actor {
   type Status = {
     #available;
     #selling;
+  };
+
+  type BackupListingEntry = {
+    id : Text;
+    name : Text;
+    price : Text;
+    description : Text;
+    status : Status;
+  };
+
+  type BackupDropEntry = {
+    id : Text;
+    name : Text;
+    scheduledAt : Int;
+    listingIds : [Text];
+  };
+
+  type BackupData = {
+    listings : [BackupListingEntry];
+    drops : [BackupDropEntry];
   };
 
   func compareDropsByScheduledAt(drop1 : Drop, drop2 : Drop) : Order.Order {
@@ -215,5 +234,69 @@ actor {
   public shared ({ caller }) func getDrop(username : Text, password : Text, id : Text) : async ?Drop {
     verifyAdmin(username, password);
     drops.get(id);
+  };
+
+  public shared ({ caller }) func exportData(username : Text, password : Text) : async BackupData {
+    verifyAdmin(username, password);
+
+    let backupListings = listings.values().toArray().map(
+      func(listing) {
+        {
+          id = listing.id;
+          name = listing.name;
+          price = listing.price;
+          description = listing.description;
+          status = listing.status;
+        };
+      }
+    );
+
+    let backupDrops = drops.values().toArray().map(
+      func(drop) { drop }
+    );
+
+    {
+      listings = backupListings;
+      drops = backupDrops;
+    };
+  };
+
+  public shared ({ caller }) func importData(
+    username : Text,
+    password : Text,
+    data : BackupData,
+  ) : async () {
+    verifyAdmin(username, password);
+
+    for (backupListing in data.listings.values()) {
+      switch (listings.get(backupListing.id)) {
+        case (null) {
+          let newListing : Listing = {
+            id = backupListing.id;
+            name = backupListing.name;
+            price = backupListing.price;
+            description = backupListing.description;
+            imageUrls = [];
+            status = backupListing.status;
+          };
+          listings.add(backupListing.id, newListing);
+        };
+        case (?existingListing) {
+          let updatedListing : Listing = {
+            id = backupListing.id;
+            name = backupListing.name;
+            price = backupListing.price;
+            description = backupListing.description;
+            imageUrls = existingListing.imageUrls;
+            status = backupListing.status;
+          };
+          listings.add(backupListing.id, updatedListing);
+        };
+      };
+    };
+
+    for (backupDrop in data.drops.values()) {
+      drops.add(backupDrop.id, backupDrop);
+    };
   };
 };

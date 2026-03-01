@@ -1,9 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type Drop, ExternalBlob, type Listing, Status } from "../backend";
+import {
+  type BackupData,
+  type Drop,
+  ExternalBlob,
+  type Listing,
+  Status,
+} from "../backend";
 import { useActor } from "./useActor";
 
 export { Status };
-export type { Drop, Listing };
+export type { BackupData, Drop, Listing };
 
 // ============================================================
 // Queries
@@ -299,6 +305,37 @@ export function useDeleteDrop() {
       );
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["drops"] });
+    },
+  });
+}
+
+export function useExportData() {
+  const { actor } = useActor();
+
+  return useMutation({
+    mutationFn: async (): Promise<BackupData> => {
+      if (!actor) throw new Error("No actor");
+      return await withSilentRetry(() =>
+        actor.exportData(ADMIN_USERNAME, ADMIN_PASSWORD),
+      );
+    },
+  });
+}
+
+export function useImportData() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: BackupData): Promise<void> => {
+      if (!actor) throw new Error("No actor");
+      await withSilentRetry(() =>
+        actor.importData(ADMIN_USERNAME, ADMIN_PASSWORD, data),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
       queryClient.invalidateQueries({ queryKey: ["drops"] });
     },
   });

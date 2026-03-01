@@ -20,10 +20,27 @@ export interface Drop {
     listingIds: Array<string>;
     scheduledAt: bigint;
 }
+export interface BackupDropEntry {
+    id: string;
+    name: string;
+    listingIds: Array<string>;
+    scheduledAt: bigint;
+}
 export interface Listing {
     id: string;
     status: Status;
     imageUrls: Array<ExternalBlob>;
+    name: string;
+    description: string;
+    price: string;
+}
+export interface BackupData {
+    listings: Array<BackupListingEntry>;
+    drops: Array<BackupDropEntry>;
+}
+export interface BackupListingEntry {
+    id: string;
+    status: Status;
     name: string;
     description: string;
     price: string;
@@ -39,9 +56,11 @@ export interface backendInterface {
     deleteListing(username: string, password: string, id: string): Promise<void>;
     editDrop(username: string, password: string, id: string, name: string, scheduledAt: bigint, listingIds: Array<string>): Promise<void>;
     editListing(username: string, password: string, id: string, name: string, price: string, description: string, imageUrls: Array<ExternalBlob>, status: Status): Promise<void>;
+    exportData(username: string, password: string): Promise<BackupData>;
     getAllDrops(username: string, password: string): Promise<Array<Drop>>;
     getAllListings(): Promise<Array<Listing>>;
     getDrop(username: string, password: string, id: string): Promise<Drop | null>;
     getListing(id: string): Promise<Listing | null>;
+    importData(username: string, password: string, data: BackupData): Promise<void>;
     setListingStatus(username: string, password: string, id: string, status: Status): Promise<void>;
 }

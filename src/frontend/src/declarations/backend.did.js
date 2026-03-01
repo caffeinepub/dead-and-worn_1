@@ -24,6 +24,23 @@ export const Status = IDL.Variant({
   'available' : IDL.Null,
   'selling' : IDL.Null,
 });
+export const BackupListingEntry = IDL.Record({
+  'id' : IDL.Text,
+  'status' : Status,
+  'name' : IDL.Text,
+  'description' : IDL.Text,
+  'price' : IDL.Text,
+});
+export const BackupDropEntry = IDL.Record({
+  'id' : IDL.Text,
+  'name' : IDL.Text,
+  'listingIds' : IDL.Vec(IDL.Text),
+  'scheduledAt' : IDL.Int,
+});
+export const BackupData = IDL.Record({
+  'listings' : IDL.Vec(BackupListingEntry),
+  'drops' : IDL.Vec(BackupDropEntry),
+});
 export const Drop = IDL.Record({
   'id' : IDL.Text,
   'name' : IDL.Text,
@@ -106,10 +123,12 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'exportData' : IDL.Func([IDL.Text, IDL.Text], [BackupData], []),
   'getAllDrops' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(Drop)], []),
   'getAllListings' : IDL.Func([], [IDL.Vec(Listing)], ['query']),
   'getDrop' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Opt(Drop)], []),
   'getListing' : IDL.Func([IDL.Text], [IDL.Opt(Listing)], ['query']),
+  'importData' : IDL.Func([IDL.Text, IDL.Text, BackupData], [], []),
   'setListingStatus' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, Status], [], []),
 });
 
@@ -129,6 +148,23 @@ export const idlFactory = ({ IDL }) => {
   });
   const ExternalBlob = IDL.Vec(IDL.Nat8);
   const Status = IDL.Variant({ 'available' : IDL.Null, 'selling' : IDL.Null });
+  const BackupListingEntry = IDL.Record({
+    'id' : IDL.Text,
+    'status' : Status,
+    'name' : IDL.Text,
+    'description' : IDL.Text,
+    'price' : IDL.Text,
+  });
+  const BackupDropEntry = IDL.Record({
+    'id' : IDL.Text,
+    'name' : IDL.Text,
+    'listingIds' : IDL.Vec(IDL.Text),
+    'scheduledAt' : IDL.Int,
+  });
+  const BackupData = IDL.Record({
+    'listings' : IDL.Vec(BackupListingEntry),
+    'drops' : IDL.Vec(BackupDropEntry),
+  });
   const Drop = IDL.Record({
     'id' : IDL.Text,
     'name' : IDL.Text,
@@ -211,10 +247,12 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'exportData' : IDL.Func([IDL.Text, IDL.Text], [BackupData], []),
     'getAllDrops' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(Drop)], []),
     'getAllListings' : IDL.Func([], [IDL.Vec(Listing)], ['query']),
     'getDrop' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Opt(Drop)], []),
     'getListing' : IDL.Func([IDL.Text], [IDL.Opt(Listing)], ['query']),
+    'importData' : IDL.Func([IDL.Text, IDL.Text, BackupData], [], []),
     'setListingStatus' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, Status],
         [],

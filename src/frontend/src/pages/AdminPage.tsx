@@ -11,12 +11,15 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  Download,
   Edit2,
+  FileJson,
   ImagePlus,
   Loader2,
   Plus,
   Tag,
   Trash2,
+  Upload,
   X,
   Zap,
 } from "lucide-react";
@@ -26,6 +29,7 @@ import EditListingDialog from "../components/EditListingDialog";
 import SiteFooter from "../components/layout/SiteFooter";
 import SiteHeader from "../components/layout/SiteHeader";
 import {
+  type BackupData,
   type Drop,
   type Listing,
   Status,
@@ -34,8 +38,10 @@ import {
   useDeleteDrop,
   useDeleteListing,
   useEditDrop,
+  useExportData,
   useGetAllDrops,
   useGetAllListings,
+  useImportData,
   useSetListingStatus,
 } from "../hooks/useQueries";
 
@@ -818,6 +824,192 @@ function DropsSection({ allListings }: { allListings: Listing[] }) {
 }
 
 // ============================================================
+// Backup Section
+// ============================================================
+
+function BackupSection() {
+  const exportMutation = useExportData();
+  const importMutation = useImportData();
+
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = async () => {
+    try {
+      const data = await exportMutation.mutateAsync();
+
+      // Serialize: convert bigint scheduledAt to string
+      const serializable = {
+        listings: data.listings,
+        drops: data.drops.map((d) => ({
+          ...d,
+          scheduledAt: d.scheduledAt.toString(),
+        })),
+      };
+
+      const json = JSON.stringify(serializable, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dead-and-worn-backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Backup downloaded!");
+    } catch {
+      toast.error("Export failed. Please try again.");
+    }
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setImportFile(file);
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    try {
+      const text = await importFile.text();
+      const raw = JSON.parse(text) as {
+        listings: BackupData["listings"];
+        drops: Array<
+          Omit<BackupData["drops"][number], "scheduledAt"> & {
+            scheduledAt: string;
+          }
+        >;
+      };
+
+      // Deserialize: convert scheduledAt strings back to bigint
+      const data: BackupData = {
+        listings: raw.listings,
+        drops: raw.drops.map((d) => ({
+          ...d,
+          scheduledAt: BigInt(d.scheduledAt),
+        })),
+      };
+
+      await importMutation.mutateAsync(data);
+      toast.success("Backup restored successfully!");
+      setImportFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch {
+      toast.error("Import failed. Check that the file is a valid backup.");
+    }
+  };
+
+  const isExporting = exportMutation.isPending;
+  const isImporting = importMutation.isPending;
+
+  return (
+    <div className="space-y-6">
+      {/* Export */}
+      <div className="border border-border bg-card">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/10">
+          <Download size={12} className="text-primary" />
+          <span className="font-mono text-[10px] uppercase tracking-widest text-foreground">
+            EXPORT DATA
+          </span>
+        </div>
+        <div className="p-4 space-y-4">
+          <p className="font-mono text-[10px] text-muted-foreground/70 leading-relaxed">
+            Download all your listings and drops as a JSON file. Photos are not
+            included — re-upload them manually after importing.
+          </p>
+          <Button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="font-mono text-xs uppercase tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 rounded-none h-9 px-5"
+          >
+            {isExporting ? (
+              <>
+                <Loader2 size={12} className="animate-spin mr-1.5" />
+                EXPORTING...
+              </>
+            ) : (
+              <>
+                <Download size={12} className="mr-1.5" />
+                EXPORT BACKUP
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Import */}
+      <div className="border border-border bg-card">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/10">
+          <Upload size={12} className="text-primary" />
+          <span className="font-mono text-[10px] uppercase tracking-widest text-foreground">
+            IMPORT DATA
+          </span>
+        </div>
+        <div className="p-4 space-y-4">
+          <p className="font-mono text-[10px] text-muted-foreground/70 leading-relaxed">
+            Upload a previously exported backup file to restore your listings
+            and drops. Existing listings with matching IDs will have their text
+            data updated. Photos must be re-uploaded manually.
+          </p>
+
+          {/* File drop zone */}
+          <label className="flex flex-col items-center justify-center border border-dashed border-primary/30 bg-muted/10 h-20 cursor-pointer hover:bg-primary/5 transition-colors group">
+            <FileJson
+              size={18}
+              className="text-primary/40 group-hover:text-primary/70 transition-colors mb-1"
+            />
+            {importFile ? (
+              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                {importFile.name}
+              </span>
+            ) : (
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                CLICK TO SELECT .JSON FILE
+              </span>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
+
+          <Button
+            onClick={handleImport}
+            disabled={!importFile || isImporting}
+            className="font-mono text-xs uppercase tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 rounded-none h-9 px-5"
+          >
+            {isImporting ? (
+              <>
+                <Loader2 size={12} className="animate-spin mr-1.5" />
+                IMPORTING...
+              </>
+            ) : (
+              <>
+                <Upload size={12} className="mr-1.5" />
+                IMPORT BACKUP
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Info box */}
+      <div className="border border-border/40 p-4 bg-muted/10">
+        <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/60 mb-2">
+          HOW BACKUP WORKS
+        </p>
+        <p className="font-mono text-[10px] text-muted-foreground/50 leading-relaxed">
+          Before updating to a new version: hit Export to save your data. After
+          the new version is live: use Import to restore everything. Re-upload
+          photos from the admin listings tab.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // Admin Page
 // ============================================================
 
@@ -851,6 +1043,12 @@ export default function AdminPage() {
               className="font-mono text-xs uppercase tracking-widest rounded-none px-6 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               DROPS
+            </TabsTrigger>
+            <TabsTrigger
+              value="backup"
+              className="font-mono text-xs uppercase tracking-widest rounded-none px-6 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              BACKUP
             </TabsTrigger>
           </TabsList>
 
@@ -943,6 +1141,11 @@ export default function AdminPage() {
           {/* Drops tab */}
           <TabsContent value="drops" className="mt-0">
             <DropsSection allListings={listings ?? []} />
+          </TabsContent>
+
+          {/* Backup tab */}
+          <TabsContent value="backup" className="mt-0">
+            <BackupSection />
           </TabsContent>
         </Tabs>
       </main>

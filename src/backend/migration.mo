@@ -8,8 +8,25 @@ module {
     name : Text;
     price : Text;
     description : Text;
-    imageUrl : Storage.ExternalBlob;
-    status : { #available; #selling };
+    imageUrls : [Storage.ExternalBlob];
+    status : Status;
+  };
+
+  type OldDrop = {
+    id : Text;
+    name : Text;
+    scheduledAt : Int;
+    listingIds : [Text];
+  };
+
+  type Status = {
+    #available;
+    #selling;
+  };
+
+  type OldActor = {
+    listings : Map.Map<Text, OldListing>;
+    drops : Map.Map<Text, OldDrop>;
   };
 
   type NewListing = {
@@ -18,26 +35,45 @@ module {
     price : Text;
     description : Text;
     imageUrls : [Storage.ExternalBlob];
-    status : { #available; #selling };
+    status : Status;
   };
 
-  type OldActor = {
-    listings : Map.Map<Text, OldListing>;
+  type NewDrop = {
+    id : Text;
+    name : Text;
+    scheduledAt : Int;
+    listingIds : [Text];
+  };
+
+  type BackupListingEntry = {
+    id : Text;
+    name : Text;
+    price : Text;
+    description : Text;
+    status : Status;
+  };
+
+  type BackupDropEntry = {
+    id : Text;
+    name : Text;
+    scheduledAt : Int;
+    listingIds : [Text];
+  };
+
+  type BackupData = {
+    listings : [BackupListingEntry];
+    drops : [BackupDropEntry];
   };
 
   type NewActor = {
     listings : Map.Map<Text, NewListing>;
+    drops : Map.Map<Text, NewDrop>;
   };
 
   public func run(old : OldActor) : NewActor {
-    let newListings = old.listings.map<Text, OldListing, NewListing>(
-      func(_id, oldListing) {
-        {
-          oldListing with
-          imageUrls = [oldListing.imageUrl];
-        };
-      }
-    );
-    { old with listings = newListings };
+    {
+      listings = old.listings;
+      drops = old.drops;
+    };
   };
 };

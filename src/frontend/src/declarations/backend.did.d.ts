@@ -10,6 +10,23 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface BackupData {
+  'listings' : Array<BackupListingEntry>,
+  'drops' : Array<BackupDropEntry>,
+}
+export interface BackupDropEntry {
+  'id' : string,
+  'name' : string,
+  'listingIds' : Array<string>,
+  'scheduledAt' : bigint,
+}
+export interface BackupListingEntry {
+  'id' : string,
+  'status' : Status,
+  'name' : string,
+  'description' : string,
+  'price' : string,
+}
 export interface Drop {
   'id' : string,
   'name' : string,
@@ -90,10 +107,12 @@ export interface _SERVICE {
     ],
     undefined
   >,
+  'exportData' : ActorMethod<[string, string], BackupData>,
   'getAllDrops' : ActorMethod<[string, string], Array<Drop>>,
   'getAllListings' : ActorMethod<[], Array<Listing>>,
   'getDrop' : ActorMethod<[string, string, string], [] | [Drop]>,
   'getListing' : ActorMethod<[string], [] | [Listing]>,
+  'importData' : ActorMethod<[string, string, BackupData], undefined>,
   'setListingStatus' : ActorMethod<[string, string, string, Status], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
