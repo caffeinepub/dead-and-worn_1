@@ -1,28 +1,61 @@
 # Dead and Worn
 
 ## Current State
-New project. No existing code.
+
+- Motoko backend with a single `Listing` type: id, name, price, description, imageUrl (single ExternalBlob), status (available | selling)
+- CRUD operations: addListing, editListing, deleteListing, setListingStatus, getAllListings, getListing
+- Admin auth via hardcoded username/password (slimkid3 / AliceInChains92)
+- Frontend: HomePage (public grid), ListingPage (detail), AdminPage (add/edit/delete/status), LoginPage
+- blob-storage component already integrated
+- Y2K underground alternative visual style
 
 ## Requested Changes (Diff)
 
 ### Add
-- Clothing listing store called "Dead and Worn"
-- Each listing has: photo (uploaded image), name, price, description, and status (AVAILABLE or SELLING)
-- Public grid view of all listings
-- Public detail page per listing showing photo, name, price, description, TikTok handle @whyteboyswag, and "DM to buy" call to action
-- Admin login with hardcoded credentials: username slimkid3, password AliceInChains92
-- Admin-only: add new listing (with image upload), edit listing, mark listing as SELLING, delete listing
-- Listings posted by admin are immediately visible to all public visitors
-- No "problem listing item" errors -- all listing operations must be robust and always succeed
-- Status badge on grid cards: "SELLING" badge when item is in process of being sold
+
+- **Multiple photos per listing**: `imageUrl` (single blob) replaced with `imageUrls` (array of ExternalBlob). Unlimited photos per listing.
+- **Scrollable photo gallery** on ListingPage: swipeable/scrollable gallery showing all images for a listing.
+- **Drops system**:
+  - New `Drop` type: id, name, scheduledAt (Unix timestamp in seconds), listingIds (array of Text)
+  - Drops CRUD: createDrop, editDrop, deleteDrop, getAllDrops, getDrop
+  - Listings can be assigned to a drop; when assigned to a drop they are hidden from public until `scheduledAt` passes
+  - `getAllListings` public query only returns listings NOT in an active (future) drop; listings in a past/expired drop are visible
+  - Separate `getDropListings` query returns listings for a specific drop (admin use)
+  - "Next Drop In..." countdown on the homepage showing the nearest upcoming drop timer (days, hours, minutes, seconds)
+  - When timer hits zero, items in that drop become publicly visible automatically (frontend polls or recalculates)
+- **Admin: drop management**: Create a drop, set name and datetime, assign existing or new listings to it, edit/delete drops
+- **Admin: edit existing listings** to add/remove/reorder photos (imageUrls array management)
 
 ### Modify
-- N/A (new project)
+
+- `Listing` type: replace `imageUrl: ExternalBlob` with `imageUrls: [ExternalBlob]` (array)
+- `addListing` and `editListing` backend functions: accept `imageUrls` array instead of single `imageUrl`
+- `getAllListings` public query: filter out listings assigned to a future drop (not yet released)
+- AdminPage: update add/edit forms to support multiple photo uploads; add drop management UI tab
+- ListingPage: replace single image display with scrollable gallery
+- HomePage: add "Next Drop In..." countdown banner when an upcoming drop exists
 
 ### Remove
-- N/A (new project)
+
+- Single `imageUrl` field from Listing (replaced by `imageUrls` array)
 
 ## Implementation Plan
-1. Backend: Store listings with fields (id, name, price, description, imageUrl, status). Expose query to list all listings and get single listing. Expose update calls for add, edit, delete, set status. Hardcode admin credential check on authenticated calls.
-2. Blob storage component for image uploads.
-3. Frontend: Public grid page with listing cards. Individual listing detail page (React Router). Admin login page. Admin dashboard with add/edit/delete/status controls. Robust error handling -- never surface "problem listing item" to the user, retry silently or handle gracefully.
+
+1. **Backend (Motoko)**:
+   - Update `Listing` type: `imageUrls : [Storage.ExternalBlob]`
+   - Add `Drop` type: `{ id: Text; name: Text; scheduledAt: Int; listingIds: [Text] }`
+   - Add drop storage map
+   - Add `createDrop`, `editDrop`, `deleteDrop`, `getAllDrops`, `getDrop` functions (admin-authenticated mutations)
+   - Update `getAllListings` to filter out listings whose id appears in any drop with `scheduledAt > now()`
+   - Add `getDropListings(adminUsername, adminPassword, dropId)` for admin to see drop contents
+   - Update `addListing` and `editListing` to use `imageUrls` array
+   - Keep `setListingStatus` and `deleteListing` unchanged
+
+2. **Frontend**:
+   - Update all listing type references from `imageUrl` to `imageUrls` array
+   - ListingPage: implement scrollable image gallery (prev/next arrows + dot indicators)
+   - AdminPage add/edit form: multi-image upload (add multiple, remove individual, reorder)
+   - AdminPage: add "Drops" tab -- create/edit/delete drops, assign listings to a drop, set countdown datetime
+   - HomePage: add "Next Drop In..." countdown banner (polls every second, calculates from nearest future drop's scheduledAt)
+   - All public queries: respect drop visibility (items in future drops don't appear in grid)
+   - No raw error messages shown to user anywhere

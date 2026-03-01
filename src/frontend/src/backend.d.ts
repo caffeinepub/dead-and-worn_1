@@ -14,12 +14,18 @@ export class ExternalBlob {
     static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob;
     withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
 }
+export interface Drop {
+    id: string;
+    name: string;
+    listingIds: Array<string>;
+    scheduledAt: bigint;
+}
 export interface Listing {
     id: string;
     status: Status;
+    imageUrls: Array<ExternalBlob>;
     name: string;
     description: string;
-    imageUrl: ExternalBlob;
     price: string;
 }
 export enum Status {
@@ -27,10 +33,15 @@ export enum Status {
     selling = "selling"
 }
 export interface backendInterface {
-    addListing(adminUsername: string, adminPassword: string, id: string, name: string, price: string, description: string, imageUrl: ExternalBlob): Promise<void>;
-    deleteListing(adminUsername: string, adminPassword: string, id: string): Promise<void>;
-    editListing(adminUsername: string, adminPassword: string, id: string, name: string, price: string, description: string, imageUrl: ExternalBlob, status: Status): Promise<void>;
+    addListing(username: string, password: string, id: string, name: string, price: string, description: string, imageUrls: Array<ExternalBlob>, status: Status): Promise<void>;
+    createDrop(username: string, password: string, id: string, name: string, scheduledAt: bigint, listingIds: Array<string>): Promise<void>;
+    deleteDrop(username: string, password: string, id: string): Promise<void>;
+    deleteListing(username: string, password: string, id: string): Promise<void>;
+    editDrop(username: string, password: string, id: string, name: string, scheduledAt: bigint, listingIds: Array<string>): Promise<void>;
+    editListing(username: string, password: string, id: string, name: string, price: string, description: string, imageUrls: Array<ExternalBlob>, status: Status): Promise<void>;
+    getAllDrops(username: string, password: string): Promise<Array<Drop>>;
     getAllListings(): Promise<Array<Listing>>;
+    getDrop(username: string, password: string, id: string): Promise<Drop | null>;
     getListing(id: string): Promise<Listing | null>;
-    setListingStatus(adminUsername: string, adminPassword: string, id: string, status: Status): Promise<void>;
+    setListingStatus(username: string, password: string, id: string, status: Status): Promise<void>;
 }

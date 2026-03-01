@@ -1,8 +1,102 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from "react";
 import ListingCard from "../components/ListingCard";
 import SiteFooter from "../components/layout/SiteFooter";
 import SiteHeader from "../components/layout/SiteHeader";
-import { useGetAllListings } from "../hooks/useQueries";
+import { useGetAllDrops, useGetAllListings } from "../hooks/useQueries";
+
+// ============================================================
+// Next Drop Countdown Banner
+// ============================================================
+
+function NextDropBanner() {
+  const { data: drops } = useGetAllDrops();
+  const [now, setNow] = useState(() => BigInt(Math.floor(Date.now() / 1000)));
+
+  // Tick every second
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNow(BigInt(Math.floor(Date.now() / 1000)));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!drops || drops.length === 0) return null;
+
+  // Find nearest future drop
+  const futureDrops = drops.filter((d) => d.scheduledAt > now);
+  if (futureDrops.length === 0) return null;
+
+  const next = futureDrops.reduce((a, b) =>
+    a.scheduledAt < b.scheduledAt ? a : b,
+  );
+
+  const diff = Number(next.scheduledAt - now);
+  if (diff <= 0) return null;
+
+  const d = Math.floor(diff / 86400);
+  const h = Math.floor((diff % 86400) / 3600);
+  const m = Math.floor((diff % 3600) / 60);
+  const s = diff % 60;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  const parts: string[] = [];
+  if (d > 0) parts.push(`${d}D`);
+  if (h > 0 || d > 0) parts.push(`${pad(h)}H`);
+  if (m > 0 || h > 0 || d > 0) parts.push(`${pad(m)}M`);
+  parts.push(`${pad(s)}S`);
+
+  return (
+    <div
+      className="relative border-y border-primary/40 bg-primary/5 overflow-hidden"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {/* Scanline effect */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-30"
+        aria-hidden="true"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, transparent, transparent 2px, oklch(0 0 0 / 0.06) 2px, oklch(0 0 0 / 0.06) 4px)",
+        }}
+      />
+
+      {/* Pulse dot */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary"
+        aria-hidden="true"
+      />
+
+      <div className="relative max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-4">
+        <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-primary/60 shrink-0">
+          NEXT DROP IN —
+        </span>
+        <div className="flex items-center gap-3">
+          {parts.map((part) => (
+            <span
+              key={part}
+              className="font-mono text-lg sm:text-xl font-bold text-foreground tracking-[0.08em] tabular-nums"
+              style={{
+                textShadow: "0 0 12px oklch(0.83 0.23 142 / 0.4)",
+              }}
+            >
+              {part}
+            </span>
+          ))}
+        </div>
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/50 sm:ml-auto">
+          {next.name}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Home Page
+// ============================================================
 
 export default function HomePage() {
   const { data: listings, isLoading } = useGetAllListings();
@@ -11,7 +105,7 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col bg-background">
       <SiteHeader />
 
-      {/* ── FIX 2: Broken-grid zine hero ── */}
+      {/* ── Broken-grid zine hero ── */}
       <section className="relative border-b border-border overflow-hidden scanlines">
         {/* Bleed grid lines — zine print guides */}
         <div
@@ -56,9 +150,9 @@ export default function HomePage() {
             </span>
           </div>
 
-          {/* Main title — intentionally oversized, line-break treated as design */}
+          {/* Main title — intentionally oversized */}
           <div className="relative">
-            {/* Mis-registration ghost — slightly offset duplicate, simulates bad xerox */}
+            {/* Mis-registration ghost */}
             <div
               className="absolute font-display uppercase leading-[0.86] tracking-[-0.03em] select-none pointer-events-none"
               aria-hidden="true"
@@ -128,6 +222,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Next Drop Banner ── */}
+      <NextDropBanner />
 
       {/* Main content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">

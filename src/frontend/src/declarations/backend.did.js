@@ -24,12 +24,18 @@ export const Status = IDL.Variant({
   'available' : IDL.Null,
   'selling' : IDL.Null,
 });
+export const Drop = IDL.Record({
+  'id' : IDL.Text,
+  'name' : IDL.Text,
+  'listingIds' : IDL.Vec(IDL.Text),
+  'scheduledAt' : IDL.Int,
+});
 export const Listing = IDL.Record({
   'id' : IDL.Text,
   'status' : Status,
+  'imageUrls' : IDL.Vec(ExternalBlob),
   'name' : IDL.Text,
   'description' : IDL.Text,
-  'imageUrl' : ExternalBlob,
   'price' : IDL.Text,
 });
 
@@ -68,12 +74,24 @@ export const idlService = IDL.Service({
         IDL.Text,
         IDL.Text,
         IDL.Text,
-        ExternalBlob,
+        IDL.Vec(ExternalBlob),
+        Status,
       ],
       [],
       [],
     ),
+  'createDrop' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Vec(IDL.Text)],
+      [],
+      [],
+    ),
+  'deleteDrop' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
   'deleteListing' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+  'editDrop' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Vec(IDL.Text)],
+      [],
+      [],
+    ),
   'editListing' : IDL.Func(
       [
         IDL.Text,
@@ -82,13 +100,15 @@ export const idlService = IDL.Service({
         IDL.Text,
         IDL.Text,
         IDL.Text,
-        ExternalBlob,
+        IDL.Vec(ExternalBlob),
         Status,
       ],
       [],
       [],
     ),
+  'getAllDrops' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(Drop)], []),
   'getAllListings' : IDL.Func([], [IDL.Vec(Listing)], ['query']),
+  'getDrop' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Opt(Drop)], []),
   'getListing' : IDL.Func([IDL.Text], [IDL.Opt(Listing)], ['query']),
   'setListingStatus' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, Status], [], []),
 });
@@ -109,12 +129,18 @@ export const idlFactory = ({ IDL }) => {
   });
   const ExternalBlob = IDL.Vec(IDL.Nat8);
   const Status = IDL.Variant({ 'available' : IDL.Null, 'selling' : IDL.Null });
+  const Drop = IDL.Record({
+    'id' : IDL.Text,
+    'name' : IDL.Text,
+    'listingIds' : IDL.Vec(IDL.Text),
+    'scheduledAt' : IDL.Int,
+  });
   const Listing = IDL.Record({
     'id' : IDL.Text,
     'status' : Status,
+    'imageUrls' : IDL.Vec(ExternalBlob),
     'name' : IDL.Text,
     'description' : IDL.Text,
-    'imageUrl' : ExternalBlob,
     'price' : IDL.Text,
   });
   
@@ -153,12 +179,24 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Text,
           IDL.Text,
-          ExternalBlob,
+          IDL.Vec(ExternalBlob),
+          Status,
         ],
         [],
         [],
       ),
+    'createDrop' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Vec(IDL.Text)],
+        [],
+        [],
+      ),
+    'deleteDrop' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'deleteListing' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+    'editDrop' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Vec(IDL.Text)],
+        [],
+        [],
+      ),
     'editListing' : IDL.Func(
         [
           IDL.Text,
@@ -167,13 +205,15 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Text,
           IDL.Text,
-          ExternalBlob,
+          IDL.Vec(ExternalBlob),
           Status,
         ],
         [],
         [],
       ),
+    'getAllDrops' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(Drop)], []),
     'getAllListings' : IDL.Func([], [IDL.Vec(Listing)], ['query']),
+    'getDrop' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Opt(Drop)], []),
     'getListing' : IDL.Func([IDL.Text], [IDL.Opt(Listing)], ['query']),
     'setListingStatus' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, Status],

@@ -1,7 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { ArrowLeft, Edit2, Tag, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  Edit2,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../App";
@@ -14,6 +21,127 @@ import {
   useGetListing,
   useSetListingStatus,
 } from "../hooks/useQueries";
+
+// ============================================================
+// Image Gallery
+// ============================================================
+
+function ImageGallery({ urls, name }: { urls: string[]; name: string }) {
+  const [current, setCurrent] = useState(0);
+  const count = urls.length;
+
+  if (count === 0) {
+    return (
+      <div className="border border-border bg-muted/20 aspect-[3/4] flex items-center justify-center">
+        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
+          NO IMAGE
+        </span>
+      </div>
+    );
+  }
+
+  const prev = () => setCurrent((c) => (c - 1 + count) % count);
+  const next = () => setCurrent((c) => (c + 1) % count);
+
+  return (
+    <div className="space-y-3">
+      {/* Main image */}
+      <div className="relative border border-border overflow-hidden bg-muted/20">
+        <img
+          src={urls[current]}
+          alt={`${name} — view ${current + 1} of ${count}`}
+          className="w-full object-cover"
+          style={{ maxHeight: "70vh" }}
+        />
+
+        {/* Corner accents */}
+        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary/40 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary/40 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary/40 pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/40 pointer-events-none" />
+
+        {/* Navigation arrows — only if more than 1 image */}
+        {count > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={prev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 border border-border/60 text-foreground flex items-center justify-center hover:bg-background hover:border-primary/50 transition-all backdrop-blur-sm"
+              aria-label="Previous photo"
+            >
+              <ArrowLeft size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 border border-border/60 text-foreground flex items-center justify-center hover:bg-background hover:border-primary/50 transition-all backdrop-blur-sm"
+              aria-label="Next photo"
+            >
+              <ArrowRight size={14} />
+            </button>
+
+            {/* Counter badge */}
+            <div className="absolute bottom-2 right-2 font-mono text-[9px] uppercase tracking-widest bg-background/80 border border-border/60 px-2 py-0.5 backdrop-blur-sm text-muted-foreground">
+              {current + 1} / {count}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Dots + thumbnail strip — only if more than 1 image */}
+      {count > 1 && (
+        <>
+          {/* Dot indicators */}
+          <div className="flex items-center justify-center gap-1.5">
+            {urls.map((url, i) => (
+              <button
+                key={url}
+                type="button"
+                onClick={() => setCurrent(i)}
+                aria-label={`Go to view ${i + 1}`}
+                className={`transition-all duration-200 ${
+                  i === current
+                    ? "w-4 h-1.5 bg-primary"
+                    : "w-1.5 h-1.5 bg-border hover:bg-primary/50"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Thumbnail row */}
+          <div
+            className="flex gap-1.5 overflow-x-auto pb-1"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {urls.map((url, i) => (
+              <button
+                key={`thumb-${url}`}
+                type="button"
+                onClick={() => setCurrent(i)}
+                className={`shrink-0 w-14 h-14 border overflow-hidden transition-all duration-150 ${
+                  i === current
+                    ? "border-primary/60 ring-1 ring-primary/30"
+                    : "border-border opacity-60 hover:opacity-100 hover:border-primary/30"
+                }`}
+                aria-label={`View ${i + 1}`}
+              >
+                <img
+                  src={url}
+                  alt={`View ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Listing Page
+// ============================================================
 
 export default function ListingPage() {
   const { id } = useParams({ from: "/listing/$id" });
@@ -52,6 +180,7 @@ export default function ListingPage() {
   };
 
   const isSelling = listing?.status === Status.selling;
+  const imageUrls = listing?.imageUrls.map((b) => b.getDirectURL()) ?? [];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -62,7 +191,7 @@ export default function ListingPage() {
           to="/"
           className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors mb-8"
         >
-          <ArrowLeft size={12} />
+          <ChevronLeft size={12} />
           ALL LISTINGS
         </Link>
 
@@ -89,20 +218,9 @@ export default function ListingPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            {/* Image */}
-            <div className="relative">
-              <div className="border border-border overflow-hidden bg-muted/20 relative">
-                <img
-                  src={listing.imageUrl.getDirectURL()}
-                  alt={listing.name}
-                  className="w-full object-cover"
-                />
-                {/* Corner accents */}
-                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary/40" />
-                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary/40" />
-                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary/40" />
-                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/40" />
-              </div>
+            {/* Gallery */}
+            <div>
+              <ImageGallery urls={imageUrls} name={listing.name} />
             </div>
 
             {/* Details */}

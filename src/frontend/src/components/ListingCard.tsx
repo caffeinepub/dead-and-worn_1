@@ -7,7 +7,7 @@ interface ListingCardProps {
 }
 
 export default function ListingCard({ listing, index = 0 }: ListingCardProps) {
-  const imageUrl = listing.imageUrl.getDirectURL();
+  const imageUrl = listing.imageUrls[0]?.getDirectURL() ?? "";
   const isSelling = listing.status === Status.selling;
 
   return (

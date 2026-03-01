@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalBlob, type Listing, Status } from "../backend";
+import { type Drop, ExternalBlob, type Listing, Status } from "../backend";
 import { useActor } from "./useActor";
 
 export { Status };
-export type { Listing };
+export type { Drop, Listing };
 
 // ============================================================
 // Queries
@@ -38,6 +38,22 @@ export function useGetListing(id: string) {
       }
     },
     enabled: !!actor && !isFetching && !!id,
+  });
+}
+
+export function useGetAllDrops() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Drop[]>({
+    queryKey: ["drops"],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await actor.getAllDrops(ADMIN_USERNAME, ADMIN_PASSWORD);
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!actor && !isFetching,
   });
 }
 
@@ -91,17 +107,24 @@ export function useAddListing() {
       name: string;
       price: string;
       description: string;
-      imageBytes: Uint8Array;
-      onProgress?: (pct: number) => void;
+      imageFiles: Array<{
+        bytes: Uint8Array;
+        onProgress?: (pct: number) => void;
+      }>;
+      status?: Status;
     }) => {
       if (!actor) throw new Error("No actor");
       const id = crypto.randomUUID();
-      let blob = ExternalBlob.fromBytes(
-        params.imageBytes as Uint8Array<ArrayBuffer>,
-      );
-      if (params.onProgress) {
-        blob = blob.withUploadProgress(params.onProgress);
-      }
+
+      // Build ExternalBlob array — upload all images
+      const imageBlobs: ExternalBlob[] = params.imageFiles.map((f) => {
+        let blob = ExternalBlob.fromBytes(f.bytes as Uint8Array<ArrayBuffer>);
+        if (f.onProgress) {
+          blob = blob.withUploadProgress(f.onProgress);
+        }
+        return blob;
+      });
+
       await withSilentRetry(() =>
         actor.addListing(
           ADMIN_USERNAME,
@@ -110,7 +133,8 @@ export function useAddListing() {
           params.name,
           params.price,
           params.description,
-          blob,
+          imageBlobs,
+          params.status ?? Status.available,
         ),
       );
       return id;
@@ -131,25 +155,18 @@ export function useEditListing() {
       name: string;
       price: string;
       description: string;
-      imageBytes?: Uint8Array | null;
-      existingImageUrl?: ExternalBlob;
+      /**
+       * Final merged array of ExternalBlobs.
+       * Caller is responsible for building this: keep existing blobs,
+       * create new ones via ExternalBlob.fromBytes for newly uploaded files.
+       */
+      imageUrls: ExternalBlob[];
       status: Status;
-      onProgress?: (pct: number) => void;
     }) => {
       if (!actor) throw new Error("No actor");
-      let imageBlob: ExternalBlob;
-      if (params.imageBytes && params.imageBytes.length > 0) {
-        imageBlob = ExternalBlob.fromBytes(
-          params.imageBytes as Uint8Array<ArrayBuffer>,
-        );
-        if (params.onProgress) {
-          imageBlob = imageBlob.withUploadProgress(params.onProgress);
-        }
-      } else if (params.existingImageUrl) {
-        imageBlob = params.existingImageUrl;
-      } else {
-        throw new Error("No image provided");
-      }
+      if (params.imageUrls.length === 0)
+        throw new Error("At least one image required");
+
       await withSilentRetry(() =>
         actor.editListing(
           ADMIN_USERNAME,
@@ -158,7 +175,7 @@ export function useEditListing() {
           params.name,
           params.price,
           params.description,
-          imageBlob,
+          params.imageUrls,
           params.status,
         ),
       );
@@ -207,6 +224,82 @@ export function useSetListingStatus() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["listings"] });
       queryClient.invalidateQueries({ queryKey: ["listing", variables.id] });
+    },
+  });
+}
+
+export function useCreateDrop() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      name: string;
+      scheduledAt: bigint;
+      listingIds: string[];
+    }) => {
+      if (!actor) throw new Error("No actor");
+      const id = crypto.randomUUID();
+      await withSilentRetry(() =>
+        actor.createDrop(
+          ADMIN_USERNAME,
+          ADMIN_PASSWORD,
+          id,
+          params.name,
+          params.scheduledAt,
+          params.listingIds,
+        ),
+      );
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["drops"] });
+    },
+  });
+}
+
+export function useEditDrop() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      name: string;
+      scheduledAt: bigint;
+      listingIds: string[];
+    }) => {
+      if (!actor) throw new Error("No actor");
+      await withSilentRetry(() =>
+        actor.editDrop(
+          ADMIN_USERNAME,
+          ADMIN_PASSWORD,
+          params.id,
+          params.name,
+          params.scheduledAt,
+          params.listingIds,
+        ),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["drops"] });
+    },
+  });
+}
+
+export function useDeleteDrop() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!actor) throw new Error("No actor");
+      await withSilentRetry(() =>
+        actor.deleteDrop(ADMIN_USERNAME, ADMIN_PASSWORD, id),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["drops"] });
     },
   });
 }

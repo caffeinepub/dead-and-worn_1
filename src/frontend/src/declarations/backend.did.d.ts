@@ -10,13 +10,19 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface Drop {
+  'id' : string,
+  'name' : string,
+  'listingIds' : Array<string>,
+  'scheduledAt' : bigint,
+}
 export type ExternalBlob = Uint8Array;
 export interface Listing {
   'id' : string,
   'status' : Status,
+  'imageUrls' : Array<ExternalBlob>,
   'name' : string,
   'description' : string,
-  'imageUrl' : ExternalBlob,
   'price' : string,
 }
 export type Status = { 'available' : null } |
@@ -49,15 +55,44 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   'addListing' : ActorMethod<
-    [string, string, string, string, string, string, ExternalBlob],
+    [
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      Array<ExternalBlob>,
+      Status,
+    ],
     undefined
   >,
+  'createDrop' : ActorMethod<
+    [string, string, string, string, bigint, Array<string>],
+    undefined
+  >,
+  'deleteDrop' : ActorMethod<[string, string, string], undefined>,
   'deleteListing' : ActorMethod<[string, string, string], undefined>,
-  'editListing' : ActorMethod<
-    [string, string, string, string, string, string, ExternalBlob, Status],
+  'editDrop' : ActorMethod<
+    [string, string, string, string, bigint, Array<string>],
     undefined
   >,
+  'editListing' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      Array<ExternalBlob>,
+      Status,
+    ],
+    undefined
+  >,
+  'getAllDrops' : ActorMethod<[string, string], Array<Drop>>,
   'getAllListings' : ActorMethod<[], Array<Listing>>,
+  'getDrop' : ActorMethod<[string, string, string], [] | [Drop]>,
   'getListing' : ActorMethod<[string], [] | [Listing]>,
   'setListingStatus' : ActorMethod<[string, string, string, Status], undefined>,
 }
